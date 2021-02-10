@@ -24,7 +24,7 @@ def read_csv(path: str, speed_limit: int = None) -> List[Frame]:
     with open(path) as csv_file:
         reader = csv.reader(csv_file, SimulatorDialect())
         for line in reader:
-            frame = Frame(line)
+            frame = Frame(path, line)
             if not speed_limit is None and frame.speed < speed_limit:
                 continue
             out.append(frame)
