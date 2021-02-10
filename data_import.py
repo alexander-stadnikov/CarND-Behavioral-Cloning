@@ -16,7 +16,7 @@ class SimulatorDialect(csv.Dialect):
     lineterminator = '\n'
 
 
-def read_csv(path: str) -> List[Frame]:
+def read_csv(path: str, speed_limit: int = None) -> List[Frame]:
     """
     Imports frames from the provided CSV file.
     """
@@ -24,5 +24,8 @@ def read_csv(path: str) -> List[Frame]:
     with open(path) as csv_file:
         reader = csv.reader(csv_file, SimulatorDialect())
         for line in reader:
-            out.append(Frame(line))
+            frame = Frame(line)
+            if not speed_limit is None and frame.speed < speed_limit:
+                continue
+            out.append(frame)
     return out
