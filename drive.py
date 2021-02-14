@@ -22,6 +22,15 @@ model = None
 prev_image_array = None
 
 
+import tensorflow as tf
+config = tf.compat.v1.ConfigProto(
+    gpu_options=tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8)
+)
+
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
+tf.compat.v1.keras.backend.set_session(session)
+
 class SimplePIController:
     def __init__(self, Kp, Ki):
         self.Kp = Kp
@@ -44,7 +53,7 @@ class SimplePIController:
 
 
 controller = SimplePIController(0.1, 0.002)
-set_speed = 9
+set_speed = 30
 controller.set_desired(set_speed)
 
 
