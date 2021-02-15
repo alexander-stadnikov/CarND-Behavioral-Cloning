@@ -5,7 +5,6 @@ from keras.layers import Lambda, Cropping2D
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
-from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 
 import numpy as np
@@ -15,6 +14,7 @@ import os
 
 from data_import import read_csv
 from frame import Frame
+from generator import generator
 
 
 import tensorflow as tf
@@ -35,23 +35,6 @@ for src in samples_sources:
 
 # Split all sample onto validation and test samples
 train_samples, validation_samples = train_test_split(samples, test_size=0.2)
-
-def generator(samples: List[Frame], batch_size: int) -> List[np.ndarray]:
-    while True:
-        shuffle(samples)
-        for start in range(0, len(samples), batch_size):
-            end = start + batch_size
-            batch_samples = samples[start:end]
-            images = []
-            angles = []
-
-            for frame in batch_samples:
-                for i, s in [frame.center(), frame.right(), frame.left()]:
-                    images.append(i)
-                    angles.append(s)
-
-            yield np.array(images), np.array(angles) #here we do not hold the values of X_train and y_train instead we yield the values which means we hold until the generator is running
-
 
 # compile and train the model using the generator function
 train_generator = generator(train_samples, batch_size=64)
@@ -108,8 +91,8 @@ model.fit(
     steps_per_epoch=len(train_samples) // 64,
     validation_data=validation_generator,
     validation_steps=len(validation_samples) // 64,
-    epochs=5,
-    # callbacks=callbacks,
+    epochs=1,
+    callbacks=callbacks,
     verbose=1
 )
 
