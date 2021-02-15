@@ -3,6 +3,7 @@ from keras.layers.core import Dense, Flatten
 from keras.layers import Conv2D, Activation
 from keras.layers import Lambda, Cropping2D
 from keras.optimizers import Adam
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
@@ -10,10 +11,20 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 
 from typing import List, Tuple
+import os
 
 from data_import import read_csv
 from frame import Frame
 
+
+import tensorflow as tf
+config = tf.compat.v1.ConfigProto(
+    gpu_options=tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8)
+)
+
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
+tf.compat.v1.keras.backend.set_session(session)
 
 # Read collected input data
 samples = []
@@ -77,13 +88,29 @@ def Dave2CNN() -> Sequential:
 
 model = Dave2CNN()
 model.summary()
+
+callbacks = [
+    EarlyStopping(
+        monitor='val_loss',
+        patience=2,
+        verbose=0
+    ),
+    ModelCheckpoint(
+        filepath=os.path.join('output/model_sim_{epoch:02d}.hdf5'),
+        monitor='val_loss',
+        verbose=0,
+        save_best_only=False
+    )
+]
+
 model.fit(
     train_generator,
     steps_per_epoch=len(train_samples) // 64,
     validation_data=validation_generator,
     validation_steps=len(validation_samples) // 64,
     epochs=5,
+    # callbacks=callbacks,
     verbose=1
 )
 
-model.save('model.h5')
+model.save('output/model.h5')
