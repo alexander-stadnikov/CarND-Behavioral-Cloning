@@ -16,9 +16,6 @@ class Frame:
     def __init__(self,
                  csv_file_path: str,
                  csv_line: List[str],
-                 flipping: bool = False,
-                 fading: bool = False,
-                 translation: bool = False,
                  steering_correction: float = 0.25):
         """
         Initialize an instance from a record of a CSV file.
@@ -26,9 +23,6 @@ class Frame:
         Args:
             csv_file_path: The path to the CSV file.
             csv_line: The line number from the CSV file.
-            flipping: Whether or not flipping must be used.
-            fading: Whether or not fading must be used.
-            translation: Whether or not translation must be used.
             steering_correction: The steering correction for left and right cameras.
         """
         self.center_img_path = Frame._read_path(csv_file_path, csv_line[0])
@@ -38,9 +32,10 @@ class Frame:
         self.throttle = float(csv_line[4])
         self.brake = float(csv_line[5])
         self.speed = float(csv_line[6])
-        self.flipping = flipping
-        self.fading = fading
-        self.translation = translation
+        self.flipping = False
+        self.fading = False
+        self.translation = False
+        self.shadowing = False
         self.steering_correction = steering_correction
 
     def center(self) -> Tuple[np.ndarray, float]:
@@ -86,6 +81,10 @@ class Frame:
             img, steering = self._translate(img, steering, 80)
             augmented = True
 
+        if self.shadowing:
+            img, steering = self._shadowing(img, steering)
+            augmented = True
+
         if debug and augmented:
             plt.axis('off')
             plt.subplot(1, 2, 1)
@@ -115,6 +114,26 @@ class Frame:
         steering = steering + translation_x/translation_range*2*.2
         M = np.float32([[1, 0, translation_x], [0, 1, translation_y]])
         return cv2.warpAffine(img, M, (img.shape[1], img.shape[0])), steering
+
+    def _shadowing(self, img: np.ndarray, steering: float) -> Tuple[np.ndarray, float]:
+        top_y = 320*np.random.uniform()
+        top_x = 0
+        bot_x = 160
+        bot_y = 320*np.random.uniform()
+        image_hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
+        shadow_mask = 0*image_hls[:,:,1]
+        X_m = np.mgrid[0:img.shape[0], 0:img.shape[1]][0]
+        Y_m = np.mgrid[0:img.shape[0], 0:img.shape[1]][1]
+        shadow_mask[((X_m - top_x)*(bot_y - top_y) - (bot_x - top_x)*(Y_m - top_y) >=0)] = 1
+        if np.random.randint(2) == 1:
+            random_bright = .5
+            cond1 = shadow_mask==1
+            cond0 = shadow_mask==0
+            if np.random.randint(2) == 1:
+                image_hls[:,:,1][cond1] = image_hls[:,:,1][cond1]*random_bright
+            else:
+                image_hls[:,:,1][cond0] = image_hls[:,:,1][cond0]*random_bright
+        return cv2.cvtColor(image_hls, cv2.COLOR_HLS2RGB), steering
 
     @staticmethod
     def _read_path(file: Path, img_path: str) -> str:

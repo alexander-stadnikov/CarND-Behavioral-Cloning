@@ -29,7 +29,8 @@ tf.compat.v1.keras.backend.set_session(session)
 
 # Read collected input data
 samples = []
-samples_sources = ['my_direct', 'my_reverse']
+samples_sources = ['my_direct']
+# samples_sources = ['my_direct', 'my_reverse']
 # samples_sources = ['udacity']
 for src in samples_sources:
     samples.extend(read_csv(f"./data/{src}/driving_log.csv", speed_limit=0.1))
@@ -39,13 +40,15 @@ for s in samples:
     for flipping in [False, True]:
         for fading in [False, True]:
             for translation in [False, True]:
-                if not flipping and not fading and not translation:
-                    continue
-                s_cp = copy.deepcopy(s)
-                s.flipping = flipping
-                s.fading = fading
-                s.translation = translation
-                augmented.append(s_cp)
+                for shadowing in [False, True]:
+                    if not flipping and not fading and not translation and not shadowing:
+                        continue
+                    s_cp = copy.deepcopy(s)
+                    s.flipping = flipping
+                    s.fading = fading
+                    s.translation = translation
+                    s.shadowing = shadowing
+                    augmented.append(s_cp)
 
 samples.extend(augmented)
 
