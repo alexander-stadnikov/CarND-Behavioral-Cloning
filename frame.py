@@ -17,6 +17,7 @@ class Frame:
                  csv_file_path: str,
                  csv_line: List[str],
                  flipping: bool = False,
+                 fading: bool = False,
                  steering_correction: float = 0.25):
         """
         Initialize an instance from a record of a CSV file.
@@ -35,6 +36,7 @@ class Frame:
         self.brake = float(csv_line[5])
         self.speed = float(csv_line[6])
         self.flipping = flipping
+        self.fading = fading
         self.steering_correction = steering_correction
 
     def center(self) -> Tuple[np.ndarray, float]:
@@ -72,6 +74,10 @@ class Frame:
             img, steering = self._flip(img, steering)
             augmented = True
 
+        if self.fading:
+            img, steering = self._fade(img, steering)
+            augmented = True
+
         if debug and augmented:
             plt.axis('off')
             plt.subplot(1, 2, 1)
@@ -84,6 +90,16 @@ class Frame:
 
     def _flip(self, img: np.ndarray, steering: float) -> Tuple[np.ndarray, float]:
         return cv2.flip(img, 1), -steering
+
+    def _fade(self, img: np.ndarray, steering: float) -> Tuple[np.ndarray, float]:
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+        img = np.array(img, dtype=np.float64)
+        bright = .5 + np.random.uniform()
+        img[:,:,2] = img[:,:,2]*bright
+        img[:,:,2][img[:,:,2]>255] = 255
+        img = np.array(img, dtype=np.uint8)
+        img = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
+        return img, steering
 
     @staticmethod
     def _read_path(file: Path, img_path: str) -> str:

@@ -1,7 +1,7 @@
 from keras.models import Sequential
 from keras.layers.core import Dense, Flatten
 from keras.layers import Conv2D, Activation
-from keras.layers import Lambda, Cropping2D
+from keras.layers import Lambda, Cropping2D, Dropout
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
@@ -37,11 +37,13 @@ for src in samples_sources:
 augmented = []
 for s in samples:
     for flipping in [False, True]:
-        if not flipping:
-            continue
-        s_cp = copy.deepcopy(s)
-        s.flipping = flipping
-        augmented.append(s_cp)
+        for fading in [False, True]:
+            if not flipping and not fading:
+                continue
+            s_cp = copy.deepcopy(s)
+            s.flipping = flipping
+            s.fading = fading
+            augmented.append(s_cp)
 
 samples.extend(augmented)
 
@@ -71,8 +73,11 @@ def Dave2CNN() -> Sequential:
             Conv2D(64, 3, activation='elu', padding='same'),
             Flatten(),
             Dense(100, activation='elu'),
+            # Dropout(0.2),
             Dense(50, activation='elu'),
+            # Dropout(0.2),
             Dense(10, activation='elu'),
+            # Dropout(0.2),
             Dense(1)
         ],
         name="DAVE2"
