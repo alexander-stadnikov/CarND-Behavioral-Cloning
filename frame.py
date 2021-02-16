@@ -2,9 +2,8 @@ from typing import List, Tuple
 from pathlib import Path
 
 import numpy as np
-
 import cv2
-
+import matplotlib.pyplot as plt
 
 class Frame:
     """
@@ -17,6 +16,7 @@ class Frame:
     def __init__(self,
                  csv_file_path: str,
                  csv_line: List[str],
+                 flipping: bool = False,
                  steering_correction: float = 0.25):
         """
         Initialize an instance from a record of a CSV file.
@@ -24,6 +24,7 @@ class Frame:
         Args:
             csv_file_path: The path to the CSV file.
             csv_line: The line number from the CSV file.
+            flipping: Whether or not flipping must be used.
             steering_correction: The steering correction for left and right cameras.
         """
         self.center_img_path = Frame._read_path(csv_file_path, csv_line[0])
@@ -33,25 +34,56 @@ class Frame:
         self.throttle = float(csv_line[4])
         self.brake = float(csv_line[5])
         self.speed = float(csv_line[6])
+        self.flipping = flipping
         self.steering_correction = steering_correction
 
     def center(self) -> Tuple[np.ndarray, float]:
         """
         Returns the center image and the corresponding steering angle.
         """
-        return Frame._img(self.center_img_path), self.steering
+        return self._augment(Frame._img(self.center_img_path), self.steering)
 
     def left(self) -> Tuple[np.ndarray, float]:
         """
         Returns the left image and the corresponding steering angle.
         """
-        return Frame._img(self.left_img_path), self.steering + self.steering_correction
+        return self._augment(Frame._img(self.left_img_path),
+            self.steering + self.steering_correction)
 
     def right(self) -> Tuple[np.ndarray, float]:
         """
         Returns the right image and the corresponding steering angle.
         """
-        return Frame._img(self.right_img_path), self.steering - self.steering_correction
+        return self._augment(Frame._img(self.right_img_path),
+            self.steering - self.steering_correction)
+
+    def _augment(
+        self,
+        img: np.ndarray,
+        steering: float,
+        debug: bool = False) -> Tuple[np.ndarray, float]:
+
+        augmented = False
+
+        if debug:
+            img_orig = img.copy()
+
+        if self.flipping:
+            img, steering = self._flip(img, steering)
+            augmented = True
+
+        if debug and augmented:
+            plt.axis('off')
+            plt.subplot(1, 2, 1)
+            plt.imshow(img_orig)
+            plt.subplot(1, 2, 2)
+            plt.imshow(img)
+            plt.show()
+
+        return img, steering
+
+    def _flip(self, img: np.ndarray, steering: float) -> Tuple[np.ndarray, float]:
+        return cv2.flip(img, 1), -steering
 
     @staticmethod
     def _read_path(file: Path, img_path: str) -> str:

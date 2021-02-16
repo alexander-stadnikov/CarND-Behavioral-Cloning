@@ -11,6 +11,7 @@ import numpy as np
 
 from typing import List, Tuple
 import os
+import copy
 
 from data_import import read_csv
 from frame import Frame
@@ -32,6 +33,17 @@ samples_sources = ['my_direct', 'my_reverse']
 # samples_sources = ['udacity']
 for src in samples_sources:
     samples.extend(read_csv(f"./data/{src}/driving_log.csv", speed_limit=0.1))
+
+augmented = []
+for s in samples:
+    for flipping in [False, True]:
+        if not flipping:
+            continue
+        s_cp = copy.deepcopy(s)
+        s.flipping = flipping
+        augmented.append(s_cp)
+
+samples.extend(augmented)
 
 # Split all sample onto validation and test samples
 train_samples, validation_samples = train_test_split(samples, test_size=0.2)
@@ -91,7 +103,7 @@ model.fit(
     steps_per_epoch=len(train_samples) // 64,
     validation_data=validation_generator,
     validation_steps=len(validation_samples) // 64,
-    epochs=1,
+    epochs=5,
     callbacks=callbacks,
     verbose=1
 )
