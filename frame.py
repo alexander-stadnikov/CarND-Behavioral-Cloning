@@ -18,6 +18,7 @@ class Frame:
                  csv_line: List[str],
                  flipping: bool = False,
                  fading: bool = False,
+                 translation: bool = False,
                  steering_correction: float = 0.25):
         """
         Initialize an instance from a record of a CSV file.
@@ -26,6 +27,8 @@ class Frame:
             csv_file_path: The path to the CSV file.
             csv_line: The line number from the CSV file.
             flipping: Whether or not flipping must be used.
+            fading: Whether or not fading must be used.
+            translation: Whether or not translation must be used.
             steering_correction: The steering correction for left and right cameras.
         """
         self.center_img_path = Frame._read_path(csv_file_path, csv_line[0])
@@ -37,6 +40,7 @@ class Frame:
         self.speed = float(csv_line[6])
         self.flipping = flipping
         self.fading = fading
+        self.translation = translation
         self.steering_correction = steering_correction
 
     def center(self) -> Tuple[np.ndarray, float]:
@@ -78,6 +82,10 @@ class Frame:
             img, steering = self._fade(img, steering)
             augmented = True
 
+        if self.translation:
+            img, steering = self._translate(img, steering, 80)
+            augmented = True
+
         if debug and augmented:
             plt.axis('off')
             plt.subplot(1, 2, 1)
@@ -100,6 +108,13 @@ class Frame:
         img = np.array(img, dtype=np.uint8)
         img = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
         return img, steering
+
+    def _translate(self, img: np.ndarray, steering: float, translation_range: int) -> Tuple[np.ndarray, float]:
+        translation_x = translation_range*(np.random.uniform() - 0.5)
+        translation_y = 40*(np.random.uniform() - 0.5)
+        steering = steering + translation_x/translation_range*2*.2
+        M = np.float32([[1, 0, translation_x], [0, 1, translation_y]])
+        return cv2.warpAffine(img, M, (img.shape[1], img.shape[0])), steering
 
     @staticmethod
     def _read_path(file: Path, img_path: str) -> str:

@@ -38,12 +38,14 @@ augmented = []
 for s in samples:
     for flipping in [False, True]:
         for fading in [False, True]:
-            if not flipping and not fading:
-                continue
-            s_cp = copy.deepcopy(s)
-            s.flipping = flipping
-            s.fading = fading
-            augmented.append(s_cp)
+            for translation in [False, True]:
+                if not flipping and not fading and not translation:
+                    continue
+                s_cp = copy.deepcopy(s)
+                s.flipping = flipping
+                s.fading = fading
+                s.translation = translation
+                augmented.append(s_cp)
 
 samples.extend(augmented)
 
