@@ -66,17 +66,20 @@ class Frame:
         if not self.augmentation_allowed:
             return img, steering
 
-        aug_num = 4
+        aug_num = 3
         aug_types = list(itertools.product([False, True], repeat=aug_num))
         aug_id = random.randint(0, aug_num)
-        flip, fade, translate, shadow = aug_types[aug_id]
+        flip, fade, shadow = aug_types[aug_id]
+
+        if not flip and not fade and not shadow:
+            return img, steering
 
         if flip:
             img, steering = self._flip(img, steering)
         if fade:
             img, steering = self._fade(img, steering)
-        if translate:
-            img, steering = self._translate(img, steering, 80)
+        # if translate:
+        #     img, steering = self._translate(img, steering, 80)
         if shadow:
             img, steering = self._shadowing(img, steering)
 
