@@ -29,35 +29,22 @@ tf.compat.v1.keras.backend.set_session(session)
 
 # Read collected input data
 samples = []
-samples_sources = ['my_direct']
-# samples_sources = ['my_direct', 'my_reverse']
-# samples_sources = ['udacity']
+# samples_sources = ['my_direct', 'my_reverse', 'udacity']
+samples_sources = ['my_direct', 'my_reverse', 'udacity', 'jungle_data_direct']
 for src in samples_sources:
     samples.extend(read_csv(f"./data/{src}/driving_log.csv", speed_limit=0.1))
 
-augmented = []
-for s in samples:
-    for flipping in [False, True]:
-        for fading in [False, True]:
-            for translation in [False, True]:
-                for shadowing in [False, True]:
-                    if not flipping and not fading and not translation and not shadowing:
-                        continue
-                    s_cp = copy.deepcopy(s)
-                    s.flipping = flipping
-                    s.fading = fading
-                    s.translation = translation
-                    s.shadowing = shadowing
-                    augmented.append(s_cp)
-
-samples.extend(augmented)
 
 # Split all sample onto validation and test samples
 train_samples, validation_samples = train_test_split(samples, test_size=0.2)
+for s in validation_samples:
+    s.augmentation_allowed = False
+
+batch_size = 64
 
 # compile and train the model using the generator function
-train_generator = generator(train_samples, batch_size=64)
-validation_generator = generator(validation_samples, batch_size=64)
+train_generator = generator(train_samples, batch_size=batch_size)
+validation_generator = generator(validation_samples, batch_size=batch_size)
 
 # Create the model
 def Dave2CNN() -> Sequential:
@@ -78,11 +65,10 @@ def Dave2CNN() -> Sequential:
             Conv2D(64, 3, activation='elu', padding='same'),
             Flatten(),
             Dense(100, activation='elu'),
-            # Dropout(0.2),
+            Dropout(0.25),
             Dense(50, activation='elu'),
-            # Dropout(0.2),
+            Dropout(0.25),
             Dense(10, activation='elu'),
-            # Dropout(0.2),
             Dense(1)
         ],
         name="DAVE2"
@@ -110,11 +96,11 @@ callbacks = [
 
 model.fit(
     train_generator,
-    steps_per_epoch=len(train_samples) // 64,
+    steps_per_epoch=len(train_samples) // batch_size,
     validation_data=validation_generator,
-    validation_steps=len(validation_samples) // 64,
+    validation_steps=len(validation_samples) // batch_size,
     epochs=5,
-    callbacks=callbacks,
+    # callbacks=callbacks,
     verbose=1
 )
 

@@ -4,6 +4,9 @@ from pathlib import Path
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import random
+import itertools
+
 
 class Frame:
     """
@@ -32,10 +35,7 @@ class Frame:
         self.throttle = float(csv_line[4])
         self.brake = float(csv_line[5])
         self.speed = float(csv_line[6])
-        self.flipping = False
-        self.fading = False
-        self.translation = False
-        self.shadowing = False
+        self.augmentation_allowed = True
         self.steering_correction = steering_correction
 
     def center(self) -> Tuple[np.ndarray, float]:
@@ -61,37 +61,24 @@ class Frame:
     def _augment(
         self,
         img: np.ndarray,
-        steering: float,
-        debug: bool = False) -> Tuple[np.ndarray, float]:
+        steering: float) -> Tuple[np.ndarray, float]:
 
-        augmented = False
+        if not self.augmentation_allowed:
+            return img, steering
 
-        if debug:
-            img_orig = img.copy()
+        aug_num = 4
+        aug_types = list(itertools.product([False, True], repeat=aug_num))
+        aug_id = random.randint(0, aug_num)
+        flip, fade, translate, shadow = aug_types[aug_id]
 
-        if self.flipping:
+        if flip:
             img, steering = self._flip(img, steering)
-            augmented = True
-
-        if self.fading:
+        if fade:
             img, steering = self._fade(img, steering)
-            augmented = True
-
-        if self.translation:
+        if translate:
             img, steering = self._translate(img, steering, 80)
-            augmented = True
-
-        if self.shadowing:
+        if shadow:
             img, steering = self._shadowing(img, steering)
-            augmented = True
-
-        if debug and augmented:
-            plt.axis('off')
-            plt.subplot(1, 2, 1)
-            plt.imshow(img_orig)
-            plt.subplot(1, 2, 2)
-            plt.imshow(img)
-            plt.show()
 
         return img, steering
 
