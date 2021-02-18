@@ -29,7 +29,7 @@ tf.compat.v1.keras.backend.set_session(session)
 
 # Read collected input data
 samples = []
-samples_sources = ['my_direct', 'my_reverse', 'udacity', 'jungle_data_direct']
+samples_sources = ['my_direct', 'my_reverse']
 for src in samples_sources:
     samples.extend(read_csv(f"./data/{src}/driving_log.csv", speed_limit=0.1))
 
